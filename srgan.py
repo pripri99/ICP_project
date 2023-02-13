@@ -36,8 +36,8 @@ class SRGAN:
     def __init__(self):
         # Input shape
         self.channels = 3
-        self.lr_height = 56 # 64  # Low resolution height
-        self.lr_width = 56 #64  # Low resolution width
+        self.lr_height = 64 #56 # 64  # Low resolution height
+        self.lr_width = 64 #56 #64  # Low resolution width
         self.lr_shape = (self.lr_height, self.lr_width, self.channels)
         self.hr_height = self.lr_height * 4  # High resolution height
         self.hr_width = self.lr_width * 4  # High resolution width
@@ -109,18 +109,19 @@ class SRGAN:
         third block of the model
         """
         # ValueError: When setting `include_top=True` and loading `imagenet` weights, `input_shape` should be (224, 224, 3).  Received: input_shape=(256, 256, 3)
-        vgg = VGG19(weights="imagenet") # input_tensor=Input(shape=self.hr_shape)
+        vgg = VGG19(weights="imagenet",include_top=False,input_tensor=Input(shape=self.hr_shape)) 
+        # input_tensor=Input(shape=self.hr_shape)
         # Set outputs to outputs of last conv. layer in block 3
         # See architecture at: https://github.com/keras-team/keras/blob/master/keras/applications/vgg19.py
-        vgg.outputs = [vgg.layers[9].output]
+        vgg.outputs = [vgg.get_layer("block3_conv4").output] #[vgg.layers[9].output]
 
         img = Input(shape=self.hr_shape)
         #img = Input(shape=(224, 224, 3))
 
         # Extract image features
-        img_features = vgg(img)
+        #img_features = vgg(img)
 
-        return Model(img, img_features)
+        return Model(vgg.input, vgg.outputs )
 
     def build_generator(self):
         def residual_block(layer_input, filters):

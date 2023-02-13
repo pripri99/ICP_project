@@ -1,2 +1,6 @@
 *dataset*
 *env
+*__pycache__*
+*pyc
+*images*
+__pycache__/dataloader.cpython-39.pyc

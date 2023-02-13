@@ -3,13 +3,15 @@ Code from: https://github.com/eriklindernoren/Keras-GAN/blob/master/srgan/data_l
 """
 
 import scipy
+import imageio
 from glob import glob
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.transform import resize
 
 
 class DataLoader:
-    def __init__(self, dataset_name, img_res=(224, 224)): #(128,128)
+    def __init__(self, dataset_name, img_res=(256, 256)): #(128,128)
         self.dataset_name = dataset_name
         self.img_res = img_res
 
@@ -17,7 +19,7 @@ class DataLoader:
         data_type = "train" if not is_testing else "test"
 
         path = glob("./datasets/%s/*" % (self.dataset_name))
-        print("Dataset Path is :", path)
+        # print("Dataset Path is :", path)
 
         batch_images = np.random.choice(path, size=batch_size)
 
@@ -29,8 +31,10 @@ class DataLoader:
             h, w = self.img_res
             low_h, low_w = int(h / 4), int(w / 4)
 
-            img_hr = scipy.misc.imresize(img, self.img_res)
-            img_lr = scipy.misc.imresize(img, (low_h, low_w))
+            # img_hr = scipy.misc.imresize(img, self.img_res)
+            # img_lr = scipy.misc.imresize(img, (low_h, low_w))
+            img_hr = resize(img, self.img_res)
+            img_lr = resize(img, (low_h, low_w))
 
             # If training => do random flip
             if not is_testing and np.random.random() < 0.5:
@@ -46,4 +50,4 @@ class DataLoader:
         return imgs_hr, imgs_lr
 
     def imread(self, path):
-        return scipy.misc.imread(path, mode="RGB").astype(np.float)
+        return imageio.imread(path, pilmode="RGB").astype(np.float)

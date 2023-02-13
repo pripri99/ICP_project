@@ -7,3 +7,7 @@ pillow
 scikit-image
 black
 flake8
+Pillow
+imageio
+scikit-image
+boto3
