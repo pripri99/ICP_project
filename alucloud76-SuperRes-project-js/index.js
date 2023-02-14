@@ -1,6 +1,10 @@
 //const tf = require("@tensorflow/tfjs");
 
-const tfn = require("@tensorflow/tfjs-node");
+// const tfn = require("@tensorflow/tfjs-node");
+import * as tf from "@tensorflow/tfjs-node";
+import { Tensor3D } from "@tensorflow/tfjs-node";
+
+const fs = require("fs");
 const imageGet = require("get-image-data");
 
 const Jimp = require("jimp");
@@ -21,63 +25,28 @@ const OUTPUT_IMAGE_HEIGHT = 256;
 const OUTPUT_IMAGE_WIDTH = 256;
 const OUTPUT_IMAGE_CHANNELS = 3;
 
-function improve_resolution(inputTensor) {
-  return tf.tidy(() => {
-    const res = decoder.predict(inputTensor).mul(255).cast("int32");
-    const reshaped = res.reshape([
-      inputTensor.shape[0],
-      OUTPUT_IMAGE_HEIGHT,
-      OUTPUT_IMAGE_WIDTH,
-      OUTPUT_IMAGE_CHANNELS,
-    ]);
-    return reshaped;
-  });
+const handler = tf.io.fileSystem("./generator_tfjs/model.json");
+
+async function main() {
+  const model = await tf.loadGraphModel(handler);
+  var s3 = new AWS.S3({ apiVersion: "2006-03-01" });
+  var params = { Bucket: "myBucket", Key: "myImageFile.jpg" };
+  var file = require("fs").createWriteStream("/path/to/file.jpg");
+  s3.getObject(params).createReadStream().pipe(file);
+
+  /*let img = fs.readFileSync(process.argv[2] || "0806.jpg");
+  const im = tf.node.decodeJpeg(img).toFloat().expandDims();
+  const res = model.predict(im);
+
+  let outputTensor = tf.squeeze(res, [0]);
+
+  const outputImage = await tf.node.encodeJpeg(outputTensor);
+  fs.writeFileSync("esrgan.jpeg", outputImage);*/
 }
 
-(async () => {
-  //const labels = require(`${MODEL_DIR_PATH}/metadata.json`).labels;
+main();
 
-  const model = await tf.loadLayersModel(`file://${MODEL_DIR_PATH}/model.json`);
-  model.summary();
-
-  const image = await Jimp.read(IMAGE_FILE_PATH);
-  image.cover(
-    INPUT_IMAGE_HEIGHT,
-    INPUT_IMAGE_WIDTH,
-    Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE
-  );
-
-  const NUM_OF_CHANNELS = 3;
-  let values = new Float32Array(64 * 64 * NUM_OF_CHANNELS);
-
-  let i = 0;
-  image.scan(0, 0, image.bitmap.width, image.bitmap.height, (x, y, idx) => {
-    const pixel = Jimp.intToRGBA(image.getPixelColor(x, y));
-    pixel.r = pixel.r / 127.0 - 1;
-    pixel.g = pixel.g / 127.0 - 1;
-    pixel.b = pixel.b / 127.0 - 1;
-    pixel.a = pixel.a / 127.0 - 1;
-    values[i * NUM_OF_CHANNELS + 0] = pixel.r;
-    values[i * NUM_OF_CHANNELS + 1] = pixel.g;
-    values[i * NUM_OF_CHANNELS + 2] = pixel.b;
-    i++;
-  });
-
-  const outShape = [64, 64, NUM_OF_CHANNELS];
-  let img_tensor = tf.tensor3d(values, outShape, "float32");
-  img_tensor = img_tensor.expandDims(0);
-
-  const predictions = await model.predict(img_tensor).dataSync();
-  console.log(predictions);
-
-  /*for (let i = 0; i < predictions.length; i++) {
-    const label = labels[i];
-    const probability = predictions[i];
-    console.log(`${label}: ${probability}`);
-  }*/
-})();
-
-/*exports.handler = async (event) => {
+exports.handler = async (event) => {
   bucketName = "<your-bucket-name>";
   const MODEL_URL = `https://${bucketName}.s3.amazonaws.com/model.json`;
   const model = await tf.loadLayersModel(MODEL_URL);
@@ -89,4 +58,41 @@ function improve_resolution(inputTensor) {
     statusCode: 200,
     body: JSON.stringify(y),
   };
-};*/
+};
+
+/*console.log('Loading function');
+
+const aws = require('aws-sdk');
+
+const s3 = new aws.S3({ apiVersion: '2006-03-01' });
+
+
+exports.handler = async (event, context) => {
+    //console.log('Received event:', JSON.stringify(event, null, 2));
+
+    // Get the object from the event and show its content type
+    const bucket = event.Records[0].s3.bucket.name;
+    const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
+    const params = {
+        Bucket: bucket,
+        Key: key,
+    };
+    try {
+        const { ContentType } = await s3.getObject(params).promise();
+        console.log('CONTENT TYPE:', ContentType);
+        return ContentType;
+    } catch (err) {
+        console.log(err);
+        const message = `Error getting object ${key} from bucket ${bucket}. Make sure they exist and your bucket is in the same region as this function.`;
+        console.log(message);
+        throw new Error(message);
+    }
+
+        const response = {
+        statusCode: 200,
+        body: JSON.stringify('Hello from Lambda!'),
+    };
+    return response;
+
+};
+*/
