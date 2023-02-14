@@ -36,8 +36,8 @@ class SRGAN:
     def __init__(self):
         # Input shape
         self.channels = 3
-        self.lr_height = 64 #56 # 64  # Low resolution height
-        self.lr_width = 64 #56 #64  # Low resolution width
+        self.lr_height = 64  # 56 # 64  # Low resolution height
+        self.lr_width = 64  # 56 #64  # Low resolution width
         self.lr_shape = (self.lr_height, self.lr_width, self.channels)
         self.hr_height = self.lr_height * 4  # High resolution height
         self.hr_width = self.lr_width * 4  # High resolution width
@@ -109,19 +109,23 @@ class SRGAN:
         third block of the model
         """
         # ValueError: When setting `include_top=True` and loading `imagenet` weights, `input_shape` should be (224, 224, 3).  Received: input_shape=(256, 256, 3)
-        vgg = VGG19(weights="imagenet",include_top=False,input_tensor=Input(shape=self.hr_shape)) 
+        vgg = VGG19(
+            weights="imagenet",
+            include_top=False,
+            input_tensor=Input(shape=self.hr_shape),
+        )
         # input_tensor=Input(shape=self.hr_shape)
         # Set outputs to outputs of last conv. layer in block 3
         # See architecture at: https://github.com/keras-team/keras/blob/master/keras/applications/vgg19.py
-        vgg.outputs = [vgg.get_layer("block3_conv4").output] #[vgg.layers[9].output]
+        vgg.outputs = [vgg.get_layer("block3_conv4").output]  # [vgg.layers[9].output]
 
         img = Input(shape=self.hr_shape)
-        #img = Input(shape=(224, 224, 3))
+        # img = Input(shape=(224, 224, 3))
 
         # Extract image features
-        #img_features = vgg(img)
+        # img_features = vgg(img)
 
-        return Model(vgg.input, vgg.outputs )
+        return Model(vgg.input, vgg.outputs)
 
     def build_generator(self):
         def residual_block(layer_input, filters):
@@ -199,11 +203,9 @@ class SRGAN:
         return Model(d0, validity)
 
     def train(self, epochs, batch_size=1, sample_interval=50):
-
         start_time = datetime.datetime.now()
 
         for epoch in range(epochs):
-
             # ----------------------
             #  Train Discriminator
             # ----------------------
@@ -259,7 +261,7 @@ class SRGAN:
         imgs_hr, imgs_lr = self.data_loader.load_data(batch_size=2, is_testing=True)
         fake_hr = self.generator.predict(imgs_lr)
 
-        # Rescale images 0 - 1
+        # Rescale images 0 - 1 
         imgs_lr = 0.5 * imgs_lr + 0.5
         fake_hr = 0.5 * fake_hr + 0.5
         imgs_hr = 0.5 * imgs_hr + 0.5
